@@ -2,5 +2,34 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "cron-icles",
   "compatibility_date": "2025-08-03",
-  "main": "./src/index.tsx"
+  "main": "./src/index.ts",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "cron-icles-db",
+      "database_id": "local-dev-id",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "DISPATCH_QUEUE",
+        "queue": "cron-icles-dispatch"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "cron-icles-dispatch",
+        "max_batch_size": 10,
+        "max_batch_timeout": 5,
+        "max_retries": 3
+      }
+    ]
+  },
+  "triggers": {
+    "crons": [
+      "* * * * *"
+    ]
+  }
 }
