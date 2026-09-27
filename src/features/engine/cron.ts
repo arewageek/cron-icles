@@ -16,9 +16,10 @@ export async function handleCron(event: ScheduledEvent, env: CloudflareBindings,
 
     const chunkSize = 100;
     for (let i = 0; i < messages.length; i += chunkSize) {
-        await env.DISPATCH_QUEUE.sendBatch(messages.slice(i, i + chunkSize));
-    }
+        const chunkMessages = messages.slice(i, i + chunkSize);
+        const chunkTaskIds = matureTasks.slice(i, i + chunkSize).map(t => t.idempotencyKey);
 
-    const taskIds = matureTasks.map(t => t.idempotencyKey);
-    await tasks.updateManyStatuses(env.DB, taskIds, 'QUEUED');
+        await env.DISPATCH_QUEUE.sendBatch(chunkMessages);
+        await tasks.updateManyStatuses(env.DB, chunkTaskIds, 'QUEUED');
+    }
 }

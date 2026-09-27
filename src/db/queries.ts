@@ -1,5 +1,5 @@
 import { drizzle } from 'drizzle-orm/d1';
-import { eq, lte, and, inArray, sql } from 'drizzle-orm';
+import { eq, and, inArray, sql } from 'drizzle-orm';
 import { registeredWorkers, scheduledTasks, type TaskStatus } from './schema';
 
 export type WorkerRecord = typeof registeredWorkers.$inferSelect;
@@ -43,7 +43,7 @@ export const tasks = {
             .where(
                 and(
                     eq(scheduledTasks.status, 'PENDING'),
-                    lte(scheduledTasks.executeAt, sql`CURRENT_TIMESTAMP`)
+                    sql`unixepoch(${scheduledTasks.executeAt}) <= unixepoch()`
                 )
             )
             .limit(MATURE_TASK_BATCH_LIMIT);
