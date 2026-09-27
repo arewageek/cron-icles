@@ -1,35 +1,35 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "cron-icles",
-  "compatibility_date": "2025-08-03",
-  "main": "./src/index.ts",
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "cron-icles-db",
-      "database_id": "local-dev-id",
-      "migrations_dir": "migrations"
-    }
-  ],
-  "queues": {
-    "producers": [
-      {
-        "binding": "DISPATCH_QUEUE",
-        "queue": "cron-icles-dispatch"
-      }
-    ],
-    "consumers": [
-      {
-        "queue": "cron-icles-dispatch",
-        "max_batch_size": 10,
-        "max_batch_timeout": 5,
-        "max_retries": 3
-      }
-    ]
-  },
-  "triggers": {
-    "crons": [
-      "* * * * *"
-    ]
-  }
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "cron-icles",
+	"compatibility_date": "2025-08-03",
+	"main": "./src/index.ts",
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "cron-icles",
+			"database_id": "c876a923-068a-4bf7-b01d-7886097d2762", // If you're building on this you'll need to set your D1 database id (unless you're not using a D1 database)
+			"migrations_dir": "migrations"
+		}
+	],
+	"queues": {
+		"producers": [
+			{
+				"binding": "DISPATCH_QUEUE",
+				"queue": "cron-icles-dispatch"
+			}
+		],
+		"consumers": [
+			{
+				"queue": "cron-icles-dispatch",
+				"max_batch_size": 10,
+				"max_batch_timeout": 5,
+				"max_retries": 3
+			}
+		]
+	},
+	"triggers": {
+		"crons": [
+			"* * * * *"
+		]
+	}
 }
