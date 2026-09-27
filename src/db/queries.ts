@@ -9,7 +9,7 @@ export type TaskRecord = typeof scheduledTasks.$inferSelect;
 const MATURE_TASK_BATCH_LIMIT = 500;
 
 function db() {
-    return drizzle((env as CloudflareBindings).DB);
+    return drizzle(env.cron_icles);
 }
 
 export const workers = {

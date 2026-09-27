@@ -3,12 +3,16 @@
 	"name": "cron-icles",
 	"compatibility_date": "2025-08-03",
 	"main": "./src/index.ts",
+	"secrets": {
+		"required": [
+			"ADMIN_SECRET"
+		]
+	},
 	"d1_databases": [
 		{
-			"binding": "DB",
+			"binding": "cron_icles",
 			"database_name": "cron-icles",
-			"database_id": "c876a923-068a-4bf7-b01d-7886097d2762", // If you're building on this you'll need to set your D1 database id (unless you're not using a D1 database)
-			"migrations_dir": "migrations"
+			"database_id": "fea269fc-8b0a-41b6-a80e-1dd9c21f4a59"
 		}
 	],
 	"queues": {
