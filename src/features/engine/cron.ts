@@ -1,12 +1,10 @@
-import { queries } from '../../db/queries';
-import { QueuePayload } from './queue';
+import { tasks } from '../../db/queries';
+import type { QueuePayload } from './queue';
 
 export async function handleCron(event: ScheduledEvent, env: CloudflareBindings, ctx: ExecutionContext) {
-    const matureTasks = await queries.tasks.getMaturePendingTasks(env.DB);
-    
-    if (matureTasks.length === 0) {
-        return;
-    }
+    const matureTasks = await tasks.getMaturePending(env.DB);
+
+    if (matureTasks.length === 0) return;
 
     const messages = matureTasks.map(task => ({
         body: {
@@ -18,10 +16,9 @@ export async function handleCron(event: ScheduledEvent, env: CloudflareBindings,
 
     const chunkSize = 100;
     for (let i = 0; i < messages.length; i += chunkSize) {
-        const chunk = messages.slice(i, i + chunkSize);
-        await env.DISPATCH_QUEUE.sendBatch(chunk);
+        await env.DISPATCH_QUEUE.sendBatch(messages.slice(i, i + chunkSize));
     }
 
     const taskIds = matureTasks.map(t => t.idempotencyKey);
-    await queries.tasks.updateStatuses(env.DB, taskIds, 'QUEUED');
+    await tasks.updateManyStatuses(env.DB, taskIds, 'QUEUED');
 }

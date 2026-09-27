@@ -1,4 +1,5 @@
-import { queries } from '../../db/queries';
+import { workers, tasks } from '../../db/queries';
+import { QUEUE_MAX_RETRIES } from '../../constants';
 
 export interface QueuePayload {
     idempotencyKey: string;
@@ -7,17 +8,15 @@ export interface QueuePayload {
 }
 
 export async function handleQueue(batch: MessageBatch<QueuePayload>, env: CloudflareBindings, ctx: ExecutionContext) {
-    const MAX_RETRIES = 3;
-
     for (const message of batch.messages) {
         const { idempotencyKey, targetWorkerId, payload } = message.body;
 
         try {
-            const worker = await queries.workers.getById(env.DB, targetWorkerId);
-            
+            const worker = await workers.getById(env.DB, targetWorkerId);
+
             if (!worker) {
-                console.error(`Target worker ${targetWorkerId} not found for task ${idempotencyKey}.`);
-                await queries.tasks.updateStatus(env.DB, idempotencyKey, 'FAILED');
+                console.error(`Worker ${targetWorkerId} not found. Failing task ${idempotencyKey}.`);
+                await tasks.updateStatus(env.DB, idempotencyKey, 'FAILED');
                 message.ack();
                 continue;
             }
@@ -33,18 +32,18 @@ export async function handleQueue(batch: MessageBatch<QueuePayload>, env: Cloudf
             });
 
             if (!response.ok) {
-                throw new Error(`Worker returned status: ${response.status}`);
+                throw new Error(`Worker responded with ${response.status}`);
             }
 
-            await queries.tasks.updateStatus(env.DB, idempotencyKey, 'DISPATCHED');
+            await tasks.updateStatus(env.DB, idempotencyKey, 'DISPATCHED');
             message.ack();
 
         } catch (error) {
-            console.error(`Failed to dispatch task ${idempotencyKey}:`, error);
+            console.error(`Dispatch failed for task ${idempotencyKey}:`, error);
 
-            if (message.attempts >= MAX_RETRIES) {
-                console.error(`Max retries reached for task ${idempotencyKey}. Marking as FAILED.`);
-                await queries.tasks.updateStatus(env.DB, idempotencyKey, 'FAILED');
+            // message.attempts is 1-indexed. After QUEUE_MAX_RETRIES attempts, mark as failed.
+            if (message.attempts > QUEUE_MAX_RETRIES) {
+                await tasks.updateStatus(env.DB, idempotencyKey, 'FAILED');
                 message.ack();
             } else {
                 message.retry();
