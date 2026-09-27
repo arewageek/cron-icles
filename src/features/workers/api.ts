@@ -13,12 +13,21 @@ function isValidUrl(value: string): boolean {
 }
 
 workersApi.post('/register', async (c) => {
+    if (!c.env.ADMIN_SECRET) {
+        return c.json({ error: 'Server configuration error: ADMIN_SECRET is not set.' }, 500);
+    }
+
     const adminSecret = c.req.header('X-Admin-Secret');
     if (!adminSecret || adminSecret !== c.env.ADMIN_SECRET) {
         return c.json({ error: 'Unauthorized' }, 401);
     }
 
-    const body = await c.req.json();
+    let body: Record<string, unknown>;
+    try {
+        body = await c.req.json();
+    } catch {
+        return c.json({ error: 'Invalid JSON payload' }, 400);
+    }
 
     const id = typeof body.id === 'string' ? body.id.trim() : null;
     const name = typeof body.name === 'string' ? body.name.trim() : null;
