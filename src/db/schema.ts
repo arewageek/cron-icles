@@ -6,7 +6,7 @@ export type TaskStatus = 'PENDING' | 'QUEUED' | 'DISPATCHED' | 'FAILED';
 export const registeredWorkers = sqliteTable('registered_workers', {
     id: text('id').primaryKey(),
     name: text('name').notNull(),
-    endpointUrl: text('endpoint_url').notNull(),
+    webhookUrl: text('webhook_url').notNull(),
     authSecret: text('auth_secret').notNull(),
     createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`),
 });

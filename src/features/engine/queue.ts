@@ -7,21 +7,21 @@ export interface QueuePayload {
     payload: string;
 }
 
-export async function handleQueue(batch: MessageBatch<QueuePayload>, env: CloudflareBindings, ctx: ExecutionContext) {
+export async function handleQueue(batch: MessageBatch<QueuePayload>) {
     for (const message of batch.messages) {
         const { idempotencyKey, targetWorkerId, payload } = message.body;
 
         try {
-            const worker = await workers.getById(env.DB, targetWorkerId);
+            const worker = await workers.getById(targetWorkerId);
 
             if (!worker) {
                 console.error(`Worker ${targetWorkerId} not found. Failing task ${idempotencyKey}.`);
-                await tasks.updateStatus(env.DB, idempotencyKey, 'FAILED');
+                await tasks.updateStatus(idempotencyKey, 'FAILED');
                 message.ack();
                 continue;
             }
 
-            const response = await fetch(worker.endpointUrl, {
+            const response = await fetch(worker.webhookUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -35,15 +35,14 @@ export async function handleQueue(batch: MessageBatch<QueuePayload>, env: Cloudf
                 throw new Error(`Worker responded with ${response.status}`);
             }
 
-            await tasks.updateStatus(env.DB, idempotencyKey, 'DISPATCHED');
+            await tasks.updateStatus(idempotencyKey, 'DISPATCHED');
             message.ack();
 
         } catch (error) {
             console.error(`Dispatch failed for task ${idempotencyKey}:`, error);
 
-            // message.attempts is 1-indexed. After QUEUE_MAX_RETRIES attempts, mark as failed.
             if (message.attempts > QUEUE_MAX_RETRIES) {
-                await tasks.updateStatus(env.DB, idempotencyKey, 'FAILED');
+                await tasks.updateStatus(idempotencyKey, 'FAILED');
                 message.ack();
             } else {
                 message.retry();

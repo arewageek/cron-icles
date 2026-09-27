@@ -31,19 +31,19 @@ workersApi.post('/register', async (c) => {
 
     const id = typeof body.id === 'string' ? body.id.trim() : null;
     const name = typeof body.name === 'string' ? body.name.trim() : null;
-    const endpointUrl = typeof body.endpointUrl === 'string' ? body.endpointUrl.trim() : null;
+    const webhookUrl = typeof body.webhookUrl === 'string' ? body.webhookUrl.trim() : null;
     const authSecret = typeof body.authSecret === 'string' ? body.authSecret.trim() : null;
 
-    if (!id || !name || !endpointUrl || !authSecret) {
-        return c.json({ error: 'Missing required fields: id, name, endpointUrl, authSecret' }, 400);
+    if (!id || !name || !webhookUrl || !authSecret) {
+        return c.json({ error: 'Missing required fields: id, name, webhookUrl, authSecret' }, 400);
     }
 
-    if (!isValidUrl(endpointUrl)) {
-        return c.json({ error: 'endpointUrl must be a valid HTTP or HTTPS URL' }, 400);
+    if (!isValidUrl(webhookUrl)) {
+        return c.json({ error: 'webhookUrl must be a valid HTTP or HTTPS URL' }, 400);
     }
 
     try {
-        await workers.create(c.env.DB, { id, name, endpointUrl, authSecret });
+        await workers.create({ id, name, webhookUrl, authSecret });
         return c.json({ message: 'Worker registered successfully', id }, 201);
     } catch (error) {
         console.error('Failed to register worker:', error);

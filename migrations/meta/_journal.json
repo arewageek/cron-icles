@@ -8,6 +8,13 @@
       "when": 1790459058711,
       "tag": "0000_init_cron_icles_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1790478522231,
+      "tag": "0001_rename-endpointUrl-to-webhook",
+      "breakpoints": true
     }
   ]
 }

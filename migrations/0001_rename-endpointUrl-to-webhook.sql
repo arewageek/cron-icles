@@ -1,0 +1,1 @@
+ALTER TABLE `registered_workers` RENAME COLUMN "endpoint_url" TO "webhook_url";
