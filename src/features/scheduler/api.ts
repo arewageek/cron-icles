@@ -36,7 +36,7 @@ schedulerApi.post('/schedule', async (c) => {
 
     const executeAt = date.toISOString();
 
-    const worker = await workers.getById(c.env.DB, targetWorkerId);
+    const worker = await workers.getById(targetWorkerId);
     if (!worker) {
         return c.json({ error: 'Target worker is not registered.' }, 404);
     }
@@ -45,7 +45,7 @@ schedulerApi.post('/schedule', async (c) => {
         return c.json({ error: 'Unauthorized' }, 401);
     }
 
-    const isNew = await tasks.createIfNew(c.env.DB, {
+    const isNew = await tasks.createIfNew({
         idempotencyKey,
         targetWorkerId,
         executeAt,

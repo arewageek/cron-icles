@@ -1,9 +1,12 @@
-import type { QueuePayload } from './features/engine/queue';
+/// <reference path="../worker-configuration.d.ts" />
 
-declare global {
-    interface CloudflareBindings {
-        DB: D1Database;
-        DISPATCH_QUEUE: Queue<QueuePayload>;
-        ADMIN_SECRET: string;
-    }
+interface CloudflareBindings {
+    DB: D1Database;
+    DISPATCH_QUEUE: Queue<import('./features/engine/queue').QueuePayload>;
+    ADMIN_SECRET: string;
+}
+
+declare module 'cloudflare:workers' {
+    export const env: CloudflareBindings;
+    export const ctx: ExecutionContext;
 }

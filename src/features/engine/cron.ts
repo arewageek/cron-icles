@@ -1,8 +1,9 @@
+import { env } from 'cloudflare:workers';
 import { tasks } from '../../db/queries';
 import type { QueuePayload } from './queue';
 
-export async function handleCron(event: ScheduledEvent, env: CloudflareBindings, ctx: ExecutionContext) {
-    const matureTasks = await tasks.getMaturePending(env.DB);
+export async function handleCron(event: ScheduledEvent) {
+    const matureTasks = await tasks.getMaturePending();
 
     if (matureTasks.length === 0) return;
 
@@ -20,6 +21,6 @@ export async function handleCron(event: ScheduledEvent, env: CloudflareBindings,
         const chunkTaskIds = matureTasks.slice(i, i + chunkSize).map(t => t.idempotencyKey);
 
         await env.DISPATCH_QUEUE.sendBatch(chunkMessages);
-        await tasks.updateManyStatuses(env.DB, chunkTaskIds, 'QUEUED');
+        await tasks.updateManyStatuses(chunkTaskIds, 'QUEUED');
     }
 }

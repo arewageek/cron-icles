@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { env } from 'cloudflare:workers';
 import { workers } from '../../db/queries';
 
 export const workersApi = new Hono<{ Bindings: CloudflareBindings }>();
@@ -13,12 +14,12 @@ function isValidUrl(value: string): boolean {
 }
 
 workersApi.post('/register', async (c) => {
-    if (!c.env.ADMIN_SECRET) {
+    if (!env.ADMIN_SECRET) {
         return c.json({ error: 'Server configuration error: ADMIN_SECRET is not set.' }, 500);
     }
 
     const adminSecret = c.req.header('X-Admin-Secret');
-    if (!adminSecret || adminSecret !== c.env.ADMIN_SECRET) {
+    if (!adminSecret || adminSecret !== env.ADMIN_SECRET) {
         return c.json({ error: 'Unauthorized' }, 401);
     }
 

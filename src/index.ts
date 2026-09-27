@@ -15,10 +15,10 @@ export default {
     fetch: app.fetch,
 
     scheduled: async (event: ScheduledEvent, env: CloudflareBindings, ctx: ExecutionContext) => {
-        ctx.waitUntil(handleCron(event, env, ctx));
+        ctx.waitUntil(handleCron(event));
     },
 
     queue: async (batch: MessageBatch<QueuePayload>, env: CloudflareBindings, ctx: ExecutionContext) => {
-        ctx.waitUntil(handleQueue(batch, env, ctx));
+        ctx.waitUntil(handleQueue(batch));
     }
 };
