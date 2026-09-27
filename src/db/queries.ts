@@ -1,76 +1,66 @@
 import { drizzle } from 'drizzle-orm/d1';
 import { eq, lte, and, inArray, sql } from 'drizzle-orm';
-import { registeredWorkers, scheduledTasks } from './schema';
+import { registeredWorkers, scheduledTasks, type TaskStatus } from './schema';
 
 export type WorkerRecord = typeof registeredWorkers.$inferSelect;
 export type TaskRecord = typeof scheduledTasks.$inferSelect;
 
-export const queries = {
-    workers: {
-        async create(db: D1Database, worker: Omit<WorkerRecord, 'createdAt'>): Promise<void> {
-            const dbInstance = drizzle(db);
-            await dbInstance.insert(registeredWorkers).values(worker);
-        },
-        async getById(db: D1Database, id: string): Promise<WorkerRecord | null> {
-            const dbInstance = drizzle(db);
-            const result = await dbInstance
-                .select()
-                .from(registeredWorkers)
-                .where(eq(registeredWorkers.id, id))
-                .limit(1);
-            return result[0] || null;
-        }
+const MATURE_TASK_BATCH_LIMIT = 500;
+
+function db(d1: D1Database) {
+    return drizzle(d1);
+}
+
+export const workers = {
+    async create(d1: D1Database, worker: Omit<WorkerRecord, 'createdAt'>): Promise<void> {
+        await db(d1).insert(registeredWorkers).values(worker);
     },
-    tasks: {
-        async createIfNew(db: D1Database, task: Omit<TaskRecord, 'createdAt' | 'updatedAt' | 'status'>): Promise<boolean> {
-            const dbInstance = drizzle(db);
-            try {
-                const result = await dbInstance
-                    .insert(scheduledTasks)
-                    .values({
-                        ...task,
-                        status: 'PENDING'
-                    })
-                    .onConflictDoNothing();
-                
-                return result.meta.changes > 0;
-            } catch (error) {
-                console.error('Error creating task:', error);
-                return false;
-            }
-        },
-        async getMaturePendingTasks(db: D1Database): Promise<TaskRecord[]> {
-            const dbInstance = drizzle(db);
-            return await dbInstance
-                .select()
-                .from(scheduledTasks)
-                .where(
-                    and(
-                        eq(scheduledTasks.status, 'PENDING'),
-                        lte(scheduledTasks.executeAt, sql`CURRENT_TIMESTAMP`)
-                    )
-                );
-        },
-        async updateStatus(db: D1Database, idempotencyKey: string, status: TaskRecord['status']): Promise<void> {
-            const dbInstance = drizzle(db);
-            await dbInstance
-                .update(scheduledTasks)
-                .set({ 
-                    status, 
-                    updatedAt: sql`CURRENT_TIMESTAMP` 
-                })
-                .where(eq(scheduledTasks.idempotencyKey, idempotencyKey));
-        },
-        async updateStatuses(db: D1Database, idempotencyKeys: string[], status: TaskRecord['status']): Promise<void> {
-            const dbInstance = drizzle(db);
-            if (idempotencyKeys.length === 0) return;
-            await dbInstance
-                .update(scheduledTasks)
-                .set({ 
-                    status, 
-                    updatedAt: sql`CURRENT_TIMESTAMP` 
-                })
-                .where(inArray(scheduledTasks.idempotencyKey, idempotencyKeys));
-        }
+
+    async getById(d1: D1Database, id: string): Promise<WorkerRecord | null> {
+        const result = await db(d1)
+            .select()
+            .from(registeredWorkers)
+            .where(eq(registeredWorkers.id, id))
+            .limit(1);
+        return result[0] ?? null;
+    }
+};
+
+export const tasks = {
+    async createIfNew(d1: D1Database, task: Omit<TaskRecord, 'createdAt' | 'updatedAt' | 'status'>): Promise<boolean> {
+        const result = await db(d1)
+            .insert(scheduledTasks)
+            .values({ ...task, status: 'PENDING' })
+            .onConflictDoNothing()
+            .run();
+        return result.meta.changes > 0;
+    },
+
+    async getMaturePending(d1: D1Database): Promise<TaskRecord[]> {
+        return db(d1)
+            .select()
+            .from(scheduledTasks)
+            .where(
+                and(
+                    eq(scheduledTasks.status, 'PENDING'),
+                    lte(scheduledTasks.executeAt, sql`CURRENT_TIMESTAMP`)
+                )
+            )
+            .limit(MATURE_TASK_BATCH_LIMIT);
+    },
+
+    async updateStatus(d1: D1Database, idempotencyKey: string, status: TaskStatus): Promise<void> {
+        await db(d1)
+            .update(scheduledTasks)
+            .set({ status, updatedAt: sql`CURRENT_TIMESTAMP` })
+            .where(eq(scheduledTasks.idempotencyKey, idempotencyKey));
+    },
+
+    async updateManyStatuses(d1: D1Database, idempotencyKeys: string[], status: TaskStatus): Promise<void> {
+        if (idempotencyKeys.length === 0) return;
+        await db(d1)
+            .update(scheduledTasks)
+            .set({ status, updatedAt: sql`CURRENT_TIMESTAMP` })
+            .where(inArray(scheduledTasks.idempotencyKey, idempotencyKeys));
     }
 };

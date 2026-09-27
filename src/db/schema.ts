@@ -1,6 +1,8 @@
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 
+export type TaskStatus = 'PENDING' | 'QUEUED' | 'DISPATCHED' | 'FAILED';
+
 export const registeredWorkers = sqliteTable('registered_workers', {
     id: text('id').primaryKey(),
     name: text('name').notNull(),
@@ -16,7 +18,7 @@ export const scheduledTasks = sqliteTable('scheduled_tasks', {
         .references(() => registeredWorkers.id, { onDelete: 'cascade' }),
     executeAt: text('execute_at').notNull(),
     payload: text('payload').notNull(),
-    status: text('status').notNull().default('PENDING'),
+    status: text('status').$type<TaskStatus>().notNull().default('PENDING'),
     createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`),
     updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`),
 });
