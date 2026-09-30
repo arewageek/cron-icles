@@ -1,24 +1,18 @@
 {
-  "name": "cron-icles",
-  "type": "module",
+  "name": "cron-icles-monorepo",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "$npm_execpath run build && vite preview",
-    "deploy": "$npm_execpath run build && wrangler deploy",
-    "cf-typegen": "wrangler types --env-interface CloudflareBindings",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "drizzle-orm": "^0.45.3",
-    "hono": "^4.13.9"
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "deploy": "turbo run deploy"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "^1.44.0",
-    "drizzle-kit": "^0.31.11",
-    "typescript": "^7.0.2",
-    "vite": "^8.1.4",
-    "vite-ssr-components": "^0.8.0",
-    "wrangler": "^4.110.0"
-  }
+    "turbo": "^2.11.5"
+  },
+  "packageManager": "npm@11.12.1"
 }
